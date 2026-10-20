@@ -10,6 +10,7 @@
     const $ = (id) => document.getElementById(id);
     let currentUser = null;
     let currentRole = 'user';
+    const ADMIN_EMAIL = 'onlineking206@gmail.com';
     let pendingPlay = null;
 
     const modal = document.createElement('div');
@@ -67,7 +68,7 @@
     function applyAdminGate() {
       const admin = $('screen-admin');
       if (!admin) return;
-      if (currentUser && currentRole === 'admin') {
+      if (currentUser && currentUser.email?.toLowerCase() === ADMIN_EMAIL && currentRole === 'admin') {
         admin.querySelectorAll('[data-dkfm-admin-gate]').forEach((n) => n.remove());
         Array.from(admin.children).forEach((n) => { if (!n.hasAttribute('data-dkfm-admin-gate')) n.hidden = false; });
         return;
@@ -94,7 +95,7 @@
         const story = typeof window.findStory === 'function' ? window.findStory(sid) : null;
         const episode = story && typeof window.findEpisode === 'function' ? window.findEpisode(story, eid) : null;
         if (!currentUser) { openLogin({ sid, eid }); return; }
-        if (episode && episode.access === 'paid' && currentRole !== 'admin') {
+        if (episode && episode.access === 'paid' && (currentRole !== 'admin' || currentUser.email?.toLowerCase() !== ADMIN_EMAIL)) {
           window.alert('This is a premium episode. Premium payments and secure access are not set up yet, so this episode is locked for now.');
           return;
         }
