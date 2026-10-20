@@ -91,10 +91,24 @@
     const originalPlay = window.playEpisode;
     if (typeof originalPlay === 'function') {
       window.playEpisode = function (sid, eid) {
+        const story = typeof window.findStory === 'function' ? window.findStory(sid) : null;
+        const episode = story && typeof window.findEpisode === 'function' ? window.findEpisode(story, eid) : null;
         if (!currentUser) { openLogin({ sid, eid }); return; }
+        if (episode && episode.access === 'paid' && currentRole !== 'admin') {
+          window.alert('This is a premium episode. Premium payments and secure access are not set up yet, so this episode is locked for now.');
+          return;
+        }
         return originalPlay(sid, eid);
       };
     }
+
+    // Pause audio if the session disappears while a track is playing.
+    db.auth.onAuthStateChange(function (_event, session) {
+      if (!session && $('audio')) {
+        $('audio').pause();
+        $('audio').removeAttribute('src');
+      }
+    });
 
     const profilePanel = $('screen-profile');
     if (profilePanel) {
