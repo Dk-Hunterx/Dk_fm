@@ -82,6 +82,11 @@
       if (el) el.textContent = name;
       const subtitle = el?.parentElement?.querySelector('.small-note');
       if (subtitle) subtitle.textContent = currentUser ? currentUser.email : 'Guest · log in to listen';
+      $('dkfm-email-form').style.display = 'none';
+      $('dkfm-tab-login').style.display = 'none';
+      $('dkfm-tab-signup').style.display = 'none';
+      const forgot = $('dkfm-forgot');
+      if (forgot) forgot.style.display = 'none';
       const signout = $('dkfm-auth-signout');
       if (signout) signout.style.display = currentUser ? 'block' : 'none';
       const continueButton = $('dkfm-auth-continue');
