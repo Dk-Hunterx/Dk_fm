@@ -16,7 +16,7 @@
     modal.id = 'dkfm-auth-modal';
     modal.hidden = true;
     modal.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#000d;display:none;align-items:center;justify-content:center;padding:20px;overflow:auto';
-    modal.innerHTML = '<div style="background:var(--panel,#171923);color:var(--text,#fff);padding:24px;border-radius:18px;max-width:420px;width:100%;box-shadow:0 20px 80px #0008"><h2 id="dkfm-auth-title">Welcome to DK FM</h2><p id="dkfm-auth-copy">Create an account or sign in to continue.</p><div style="display:flex;gap:8px;margin:16px 0"><button id="dkfm-tab-login" type="button" class="btn" style="flex:1">Login</button><button id="dkfm-tab-signup" type="button" class="btn" style="flex:1">Sign up</button></div><form id="dkfm-email-form"><label for="dkfm-email">Gmail / Email</label><input id="dkfm-email" type="email" autocomplete="email" required placeholder="you@gmail.com" style="display:block;box-sizing:border-box;width:100%;margin:6px 0 14px;padding:12px;border-radius:10px"><label for="dkfm-password">Password</label><input id="dkfm-password" type="password" autocomplete="current-password" minlength="6" required placeholder="At least 6 characters" style="display:block;box-sizing:border-box;width:100%;margin:6px 0 14px;padding:12px;border-radius:10px"><button id="dkfm-submit" type="submit" class="btn" style="width:100%">Login</button></form><p id="dkfm-auth-status" role="status" style="font-size:13px;margin-top:12px;overflow-wrap:anywhere"></p><button id="dkfm-auth-signout" type="button" class="btn" style="display:none;width:100%">Sign out</button></div>';
+    modal.innerHTML = '<div style="background:var(--panel,#171923);color:var(--text,#fff);padding:24px;border-radius:18px;max-width:420px;width:100%;box-shadow:0 20px 80px #0008"><h2 id="dkfm-auth-title">Welcome to DK FM</h2><p id="dkfm-auth-copy">Create an account or sign in to continue.</p><div style="display:flex;gap:8px;margin:16px 0"><button id="dkfm-tab-login" type="button" class="btn" style="flex:1">Login</button><button id="dkfm-tab-signup" type="button" class="btn" style="flex:1">Sign up</button></div><form id="dkfm-email-form"><label for="dkfm-email">Gmail / Email</label><input id="dkfm-email" type="email" autocomplete="email" required placeholder="you@gmail.com" style="display:block;box-sizing:border-box;width:100%;margin:6px 0 14px;padding:12px;border-radius:10px"><label for="dkfm-password">Password</label><input id="dkfm-password" type="password" autocomplete="current-password" minlength="6" required placeholder="At least 6 characters" style="display:block;box-sizing:border-box;width:100%;margin:6px 0 14px;padding:12px;border-radius:10px"><button id="dkfm-submit" type="submit" class="btn" style="width:100%">Login</button></form><p id="dkfm-auth-status" role="status" style="font-size:13px;margin-top:12px;overflow-wrap:anywhere"></p><button id="dkfm-auth-continue" type="button" class="btn" style="display:none;width:100%;margin-top:8px">Continue to DK FM</button><button id="dkfm-auth-signout" type="button" class="btn" style="display:none;width:100%;margin-top:8px">Sign out</button></div>';
     document.body.appendChild(modal);
     const status = $('dkfm-auth-status');
     let mode = 'login';
@@ -76,6 +76,18 @@
       if (subtitle) subtitle.textContent = currentUser ? currentUser.email : 'Guest · log in to listen';
       const signout = $('dkfm-auth-signout');
       if (signout) signout.style.display = currentUser ? 'block' : 'none';
+      const continueButton = $('dkfm-auth-continue');
+      if (continueButton) continueButton.style.display = currentUser ? 'block' : 'none';
+      if (currentUser) {
+        $('dkfm-auth-copy').textContent = 'Signed in as ' + currentUser.email + '. Continue to DK FM, or sign out to use another account.';
+        $('dkfm-email-form').style.display = 'none';
+        $('dkfm-tab-login').style.display = 'none';
+        $('dkfm-tab-signup').style.display = 'none';
+      } else {
+        $('dkfm-email-form').style.display = 'block';
+        $('dkfm-tab-login').style.display = 'block';
+        $('dkfm-tab-signup').style.display = 'block';
+      }
     }
 
     async function refreshAuth() {
@@ -125,6 +137,7 @@
       };
     }
 
+    $('dkfm-auth-continue').addEventListener('click', () => hideAuth());
     $('dkfm-auth-signout').addEventListener('click', async () => {
       await db.auth.signOut();
       await refreshAuth();
@@ -163,6 +176,6 @@
       }
       setTimeout(() => refreshAuth().catch(console.error), 0);
     });
-    refreshAuth().then(() => { if (!currentUser) showAuth(true); }).catch((error) => { console.error('DK FM auth check failed:', error); showAuth(true); });
+    refreshAuth().then(() => { showAuth(true); }).catch((error) => { console.error('DK FM auth check failed:', error); showAuth(true); });
   });
 })();
