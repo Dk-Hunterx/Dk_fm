@@ -15,7 +15,7 @@
           var copy = document.getElementById('dkfm-auth-copy');
           var status = document.getElementById('dkfm-auth-status');
           if (title) title.textContent = 'Login or sign up to open this story';
-          if (copy) copy.textContent = 'Browse the catalogue freely. Create an account or log in with your email and password to open stories and listen.';
+          if (copy) copy.textContent = 'Browse the catalogue freely. Create an account or log in with your Google account to open stories and listen.';
           if (status) status.textContent = user ? 'Please verify your email before continuing.' : '';
           modal.hidden = false;
           modal.style.display = 'flex';
