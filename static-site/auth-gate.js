@@ -1,4 +1,4 @@
-/* DK FM access rules: browse publicly, sign in to listen, admin role for studio. */
+/* DK FM email/password auth. Supabase verifies passwords; admin access also requires the database admin role. */
 (function () {
   'use strict';
   const wait = (fn) => document.readyState === 'loading'
@@ -8,41 +8,64 @@
     const db = window.dkfmSupabase;
     if (!db) return;
     const $ = (id) => document.getElementById(id);
+    const ADMIN_EMAIL = 'onlineking206@gmail.com';
     let currentUser = null;
     let currentRole = 'user';
-    const ADMIN_EMAIL = 'onlineking206@gmail.com';
-    let pendingPlay = null;
 
     const modal = document.createElement('div');
     modal.id = 'dkfm-auth-modal';
     modal.hidden = true;
-    modal.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#000b;display:none;align-items:center;justify-content:center;padding:20px';
-    modal.innerHTML = '<div style="background:var(--panel,#171923);color:var(--text,#fff);padding:24px;border-radius:18px;max-width:420px;width:100%;box-shadow:0 20px 80px #0008"><button id="dkfm-auth-close" type="button" style="float:right;background:transparent;color:inherit;border:0;font-size:24px">×</button><h2 id="dkfm-auth-title">Sign in to listen</h2><p id="dkfm-auth-copy">Browse stories freely. Sign in with Google to play episodes and sync your account.</p><button id="dkfm-google-login" type="button" class="btn" style="width:100%">Continue with Google</button><p id="dkfm-auth-status" role="status" style="font-size:13px;margin-top:12px"></p></div>';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#000d;display:none;align-items:center;justify-content:center;padding:20px;overflow:auto';
+    modal.innerHTML = '<div style="background:var(--panel,#171923);color:var(--text,#fff);padding:24px;border-radius:18px;max-width:420px;width:100%;box-shadow:0 20px 80px #0008"><h2 id="dkfm-auth-title">Welcome to DK FM</h2><p id="dkfm-auth-copy">Create an account or sign in to continue.</p><div style="display:flex;gap:8px;margin:16px 0"><button id="dkfm-tab-login" type="button" class="btn" style="flex:1">Login</button><button id="dkfm-tab-signup" type="button" class="btn" style="flex:1">Sign up</button></div><form id="dkfm-email-form"><label for="dkfm-email">Gmail / Email</label><input id="dkfm-email" type="email" autocomplete="email" required placeholder="you@gmail.com" style="display:block;box-sizing:border-box;width:100%;margin:6px 0 14px;padding:12px;border-radius:10px"><label for="dkfm-password">Password</label><input id="dkfm-password" type="password" autocomplete="current-password" minlength="6" required placeholder="At least 6 characters" style="display:block;box-sizing:border-box;width:100%;margin:6px 0 14px;padding:12px;border-radius:10px"><button id="dkfm-submit" type="submit" class="btn" style="width:100%">Login</button></form><p id="dkfm-auth-status" role="status" style="font-size:13px;margin-top:12px;overflow-wrap:anywhere"></p><button id="dkfm-auth-signout" type="button" class="btn" style="display:none;width:100%">Sign out</button></div>';
     document.body.appendChild(modal);
     const status = $('dkfm-auth-status');
+    let mode = 'login';
 
-    function openLogin(reason) {
-      pendingPlay = reason || null;
-      $('dkfm-auth-title').textContent = 'Sign in to listen';
-      $('dkfm-auth-copy').textContent = 'Browse stories freely. Sign in with Google to play episodes and sync your account.';
-      status.textContent = '';
+    function showAuth(force) {
+      if (currentUser && !force) return;
       modal.hidden = false;
       modal.style.display = 'flex';
     }
-    function closeLogin() {
-      modal.hidden = true;
-      modal.style.display = 'none';
+    function hideAuth() { modal.hidden = true; modal.style.display = 'none'; }
+    function setMode(next) {
+      mode = next;
+      $('dkfm-auth-title').textContent = next === 'signup' ? 'Create your DK FM account' : 'Welcome to DK FM';
+      $('dkfm-auth-copy').textContent = next === 'signup' ? 'Sign up with your email and password. Verify your email if confirmation is enabled.' : 'Log in with the email and password registered in Supabase.';
+      $('dkfm-submit').textContent = next === 'signup' ? 'Create account' : 'Login';
+      $('dkfm-password').autocomplete = next === 'signup' ? 'new-password' : 'current-password';
+      status.textContent = '';
     }
-    $('dkfm-auth-close').addEventListener('click', closeLogin);
-    modal.addEventListener('click', (event) => { if (event.target === modal) closeLogin(); });
+    $('dkfm-tab-login').addEventListener('click', () => setMode('login'));
+    $('dkfm-tab-signup').addEventListener('click', () => setMode('signup'));
 
-    $('dkfm-google-login').addEventListener('click', async function () {
-      status.textContent = 'Opening Google sign-in…';
-      const { error } = await db.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: window.location.href.split('#')[0] }
-      });
-      if (error) status.textContent = error.message;
+    $('dkfm-email-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const email = $('dkfm-email').value.trim().toLowerCase();
+      const password = $('dkfm-password').value;
+      const submit = $('dkfm-submit');
+      submit.disabled = true;
+      status.textContent = mode === 'signup' ? 'Creating account…' : 'Checking login…';
+      try {
+        if (mode === 'signup') {
+          const { data, error } = await db.auth.signUp({ email, password, options: { emailRedirectTo: window.location.href.split('#')[0] } });
+          if (error) throw error;
+          if (data.session) {
+            status.textContent = 'Account created. Signed in successfully.';
+            await refreshAuth();
+          } else {
+            status.textContent = 'Account created. Check your email and verify it before logging in.';
+            setMode('login');
+          }
+        } else {
+          const { error } = await db.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          await refreshAuth();
+          status.textContent = 'Login successful.';
+          hideAuth();
+        }
+      } catch (error) {
+        status.textContent = error?.message || 'Could not authenticate. Check your details and try again.';
+      } finally { submit.disabled = false; }
     });
 
     function setProfile() {
@@ -50,11 +73,14 @@
       const el = $('profile-name');
       if (el) el.textContent = name;
       const subtitle = el?.parentElement?.querySelector('.small-note');
-      if (subtitle) subtitle.textContent = currentUser ? currentUser.email : 'Guest · sign in to listen';
+      if (subtitle) subtitle.textContent = currentUser ? currentUser.email : 'Guest · log in to listen';
+      const signout = $('dkfm-auth-signout');
+      if (signout) signout.style.display = currentUser ? 'block' : 'none';
     }
 
     async function refreshAuth() {
-      const { data } = await db.auth.getUser();
+      const { data, error } = await db.auth.getUser();
+      if (error && error.name !== 'AuthSessionMissingError') console.warn(error);
       currentUser = data?.user || null;
       currentRole = 'user';
       if (currentUser) {
@@ -63,52 +89,47 @@
       }
       setProfile();
       applyAdminGate();
+      return currentUser;
     }
 
     function applyAdminGate() {
       const admin = $('screen-admin');
       if (!admin) return;
-      if (currentUser && currentUser.email?.toLowerCase() === ADMIN_EMAIL && currentRole === 'admin') {
-        admin.querySelectorAll('[data-dkfm-admin-gate]').forEach((n) => n.remove());
-        Array.from(admin.children).forEach((n) => { if (!n.hasAttribute('data-dkfm-admin-gate')) n.hidden = false; });
-        return;
-      }
-      Array.from(admin.children).forEach((n) => { n.hidden = true; });
-      let gate = admin.querySelector('[data-dkfm-admin-gate]');
-      if (!gate) {
-        gate = document.createElement('div');
+      const allowed = !!currentUser &&
+        currentUser.email?.toLowerCase() === ADMIN_EMAIL &&
+        currentRole === 'admin';
+      Array.from(admin.children).forEach((node) => {
+        if (node.hasAttribute('data-dkfm-admin-gate')) node.remove();
+        else node.hidden = !allowed;
+      });
+      if (!allowed) {
+        const gate = document.createElement('div');
         gate.setAttribute('data-dkfm-admin-gate', 'true');
         gate.className = 'panel';
-        gate.innerHTML = '<h2>Admin access only</h2><p>Sign in with the authorized Google account. Only an account with the admin role in Supabase can manage DK FM.</p><button type="button" class="btn" id="dkfm-admin-google">Sign in with Google</button><p id="dkfm-admin-status" class="small-note"></p>';
+        gate.innerHTML = '<h2>Admin access unavailable</h2><p>This page has no admin login or signup option. Sign in with your authorized account using the regular login form.</p>';
         admin.prepend(gate);
-        $('dkfm-admin-google').addEventListener('click', async () => {
-          const { error } = await db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href.split('#')[0] } });
-          if (error) $('dkfm-admin-status').textContent = error.message;
-        });
       }
-      gate.hidden = false;
     }
 
     const originalPlay = window.playEpisode;
     if (typeof originalPlay === 'function') {
       window.playEpisode = function (sid, eid) {
+        if (!currentUser) { showAuth(true); return; }
         const story = typeof window.findStory === 'function' ? window.findStory(sid) : null;
         const episode = story && typeof window.findEpisode === 'function' ? window.findEpisode(story, eid) : null;
-        if (!currentUser) { openLogin({ sid, eid }); return; }
-        if (episode && episode.access === 'paid' && (currentRole !== 'admin' || currentUser.email?.toLowerCase() !== ADMIN_EMAIL)) {
-          window.alert('This is a premium episode. Premium payments and secure access are not set up yet, so this episode is locked for now.');
+        if (episode && episode.access === 'paid' && !(currentUser.email?.toLowerCase() === ADMIN_EMAIL && currentRole === 'admin')) {
+          window.alert('This premium episode is locked until secure payments are implemented.');
           return;
         }
         return originalPlay(sid, eid);
       };
     }
 
-    // Pause audio if the session disappears while a track is playing.
-    db.auth.onAuthStateChange(function (_event, session) {
-      if (!session && $('audio')) {
-        $('audio').pause();
-        $('audio').removeAttribute('src');
-      }
+    $('dkfm-auth-signout').addEventListener('click', async () => {
+      await db.auth.signOut();
+      await refreshAuth();
+      setMode('login');
+      showAuth(true);
     });
 
     const profilePanel = $('screen-profile');
@@ -125,17 +146,23 @@
           if (currentUser) {
             await db.auth.signOut();
             await refreshAuth();
-          } else openLogin(null);
+            setMode('login');
+            showAuth(true);
+          } else showAuth(true);
         });
-        const updateButton = () => {
-          action.textContent = currentUser ? 'Sign out' : 'Sign in with Google';
-        };
+        const updateButton = () => { action.textContent = currentUser ? 'Sign out' : 'Login / Sign up'; };
         updateButton();
-        db.auth.onAuthStateChange(() => setTimeout(() => { refreshAuth().then(updateButton).catch(console.error); }, 0));
+        db.auth.onAuthStateChange(() => { setTimeout(() => refreshAuth().then(updateButton).catch(console.error), 0); });
       }
     }
 
-    db.auth.onAuthStateChange(() => { setTimeout(() => refreshAuth().catch(console.error), 0); });
-    refreshAuth().catch((error) => console.error('DK FM auth check failed:', error));
+    db.auth.onAuthStateChange((_event, session) => {
+      if (!session && $('audio')) {
+        $('audio').pause();
+        $('audio').removeAttribute('src');
+      }
+      setTimeout(() => refreshAuth().catch(console.error), 0);
+    });
+    refreshAuth().then(() => { if (!currentUser) showAuth(true); }).catch((error) => { console.error('DK FM auth check failed:', error); showAuth(true); });
   });
 })();
