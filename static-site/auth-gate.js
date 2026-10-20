@@ -1,4 +1,4 @@
-/* DK FM email/password auth. Supabase verifies passwords; admin access also requires the database admin role. */
+/* DK FM Google-only sign-in. The login screen is the first full-screen interface. */
 (function () {
   'use strict';
   const wait = (fn) => document.readyState === 'loading'
@@ -15,8 +15,8 @@
     const modal = document.createElement('div');
     modal.id = 'dkfm-auth-modal';
     modal.hidden = true;
-    modal.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(8,10,18,.72);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);display:none;align-items:center;justify-content:center;padding:20px;overflow:auto';
-    modal.innerHTML = '<div style="background:var(--panel,#171923);color:var(--text,#fff);padding:28px 24px;border-radius:22px;max-width:420px;width:100%;box-shadow:0 20px 80px #0008;text-align:center"><div style="font-size:28px;font-weight:800;letter-spacing:2px;margin:10px 0 24px;color:#f6f6ff">DK FM</div><h2 id="dkfm-auth-title" style="font-size:28px;margin:0 0 10px">Welcome to DK FM</h2><p id="dkfm-auth-copy" style="color:#bcbcc5;line-height:1.5;margin:0 0 28px">Sign in or create your account securely with Google.</p><button id="dkfm-google-login" type="button" style="width:100%;padding:17px 12px;border-radius:16px;background:#fff;color:#111;font-size:17px;font-weight:700;border:1px solid #ddd;margin:8px 0 12px">🌐　Continue with Google</button><p id="dkfm-auth-status" role="status" style="font-size:13px;margin-top:12px;overflow-wrap:anywhere"></p><button id="dkfm-auth-continue" type="button" class="btn" style="display:none;width:100%;margin-top:8px">Continue to DK FM</button><button id="dkfm-auth-signout" type="button" class="btn" style="display:none;width:100%;margin-top:8px">Sign out</button><div style="display:none"><button id="dkfm-tab-login" type="button">Login</button><button id="dkfm-tab-signup" type="button">Sign up</button><form id="dkfm-email-form"><input id="dkfm-email" type="email"><input id="dkfm-password" type="password"><button id="dkfm-submit" type="submit">Login</button></form><button id="dkfm-forgot" type="button">Forgot password</button></div></div>'
+    modal.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#100f16;display:none;align-items:center;justify-content:center;padding:20px;overflow:auto';
+    modal.innerHTML = '<div style="background:var(--panel,#171923);color:var(--text,#fff);padding:28px 24px;border-radius:22px;max-width:420px;width:100%;box-shadow:0 20px 80px #0008;text-align:center"><div style="font-size:28px;font-weight:800;letter-spacing:2px;margin:10px 0 24px;color:#f6f6ff">DK FM</div><h2 id="dkfm-auth-title" style="font-size:28px;margin:0 0 10px">Welcome to DK FM</h2><p id="dkfm-auth-copy" style="color:#bcbcc5;line-height:1.5;margin:0 0 28px">Sign in with Google to enter DK FM.</p><button id="dkfm-google-login" type="button" style="width:100%;padding:17px 12px;border-radius:16px;background:#fff;color:#111;font-size:17px;font-weight:700;border:1px solid #ddd;margin:8px 0 12px">🌐　Continue with Google</button><p id="dkfm-auth-status" role="status" style="font-size:13px;margin-top:12px;overflow-wrap:anywhere"></p><button id="dkfm-auth-continue" type="button" class="btn" style="display:none;width:100%;margin-top:8px">Continue to DK FM</button><button id="dkfm-auth-signout" type="button" class="btn" style="display:none;width:100%;margin-top:8px">Sign out</button><div style="display:none"><button id="dkfm-tab-login" type="button">Login</button><button id="dkfm-tab-signup" type="button">Sign up</button><form id="dkfm-email-form"><input id="dkfm-email" type="email"><input id="dkfm-password" type="password"><button id="dkfm-submit" type="submit">Login</button></form><button id="dkfm-forgot" type="button">Forgot password</button></div></div>'
     document.body.appendChild(modal);
     const status = $('dkfm-auth-status');
     let mode = 'login';
@@ -131,7 +131,7 @@
         const gate = document.createElement('div');
         gate.setAttribute('data-dkfm-admin-gate', 'true');
         gate.className = 'panel';
-        gate.innerHTML = '<h2>Admin access unavailable</h2><p>This page has no admin login or signup option. Sign in with your authorized account using the regular login form.</p>';
+        gate.innerHTML = '<h2>Admin access unavailable</h2><p>This page has no separate admin login. Sign in with your authorized Google account first.</p>';
         admin.prepend(gate);
       }
     }
