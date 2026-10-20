@@ -51,6 +51,8 @@ create index if not exists stories_published_created_idx
 create index if not exists episodes_story_number_idx
   on public.episodes (story_id, episode_number);
 
+-- Run this in Supabase SQL Editor after deploying DK FM.
+-- Admin requires BOTH this exact Google email and role='admin' in profiles.
 create or replace function public.is_admin()
 returns boolean
 language sql
@@ -58,10 +60,12 @@ stable
 security definer
 set search_path = ''
 as $$
-  select exists (
-    select 1 from public.profiles p
-    where p.id = (select auth.uid()) and p.role = 'admin'
-  );
+  select
+    lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'onlineking206@gmail.com'
+    and exists (
+      select 1 from public.profiles p
+      where p.id = (select auth.uid()) and p.role = 'admin'
+    );
 $$;
 
 alter table public.profiles enable row level security;
