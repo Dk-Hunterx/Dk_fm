@@ -141,16 +141,17 @@
         currentUser.email?.toLowerCase() === ADMIN_EMAIL &&
         currentRole === 'admin';
       const adminShortcut = $('dkfm-admin-open');
-      if (adminShortcut) adminShortcut.hidden = !allowed;
+      if (adminShortcut) { adminShortcut.hidden = !allowed; adminShortcut.style.display = allowed ? '' : 'none'; }
       Array.from(admin.children).forEach((node) => {
         if (node.hasAttribute('data-dkfm-admin-gate')) node.remove();
-        else node.hidden = !allowed;
+        else { node.hidden = !allowed; node.style.display = allowed ? '' : 'none'; }
       });
       if (!allowed) {
         const gate = document.createElement('div');
         gate.setAttribute('data-dkfm-admin-gate', 'true');
         gate.className = 'panel';
         gate.innerHTML = '<h2>Admin access unavailable</h2><p>This page has no separate admin login. Sign in with your authorized Google account first.</p>';
+        gate.style.display = 'block';
         admin.prepend(gate);
       }
     }
