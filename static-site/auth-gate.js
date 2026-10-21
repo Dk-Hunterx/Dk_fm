@@ -79,7 +79,24 @@
     function setProfile() {
       const name = currentUser ? (currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email || 'DK FM Listener') : 'DK FM Listener';
       const el = $('profile-name');
-      if (el) el.textContent = name;
+      if (el) el.textContent = currentUser ? name.toUpperCase() : 'DK FM LISTENER';
+      const avatar = $('profile-avatar');
+      if (avatar) {
+        const photo = currentUser?.user_metadata?.avatar_url || currentUser?.user_metadata?.picture;
+        avatar.innerHTML = photo ? '<img alt="Profile photo" src="' + photo.replace(/&/g, '&amp;').replace(/\"/g, '&quot;') + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : (currentUser?.email?.charAt(0).toUpperCase() || 'D');
+      }
+      const logout = $('dkfm-profile-logout');
+      if (logout && !logout.dataset.bound) {
+        logout.dataset.bound = 'true';
+        logout.addEventListener('click', async () => {
+          if (!currentUser) { showAuth(true); return; }
+          const { error } = await db.auth.signOut();
+          if (error) { window.alert('Could not log out. Please try again.'); return; }
+          await refreshAuth();
+          showAuth(true);
+        });
+      }
+
       const subtitle = el?.parentElement?.querySelector('.small-note');
       if (subtitle) subtitle.textContent = currentUser ? currentUser.email : 'Guest · log in to listen';
       $('dkfm-email-form').style.display = 'none';
