@@ -140,6 +140,8 @@
       const allowed = !!currentUser &&
         currentUser.email?.toLowerCase() === ADMIN_EMAIL &&
         currentRole === 'admin';
+      const adminShortcut = $('dkfm-admin-open');
+      if (adminShortcut) adminShortcut.hidden = !allowed;
       Array.from(admin.children).forEach((node) => {
         if (node.hasAttribute('data-dkfm-admin-gate')) node.remove();
         else node.hidden = !allowed;
